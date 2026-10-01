@@ -4,7 +4,7 @@
 import base64, re, sys, urllib.parse, urllib.request
 
 _opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-URL = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8806/01_gate_pass.php"
+URL = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8806/1.php"
 ARG = sys.argv[2] if len(sys.argv) > 2 else None
 MARKER = "q1-gate"
 
