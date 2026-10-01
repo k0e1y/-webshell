@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""traffic/java/20_pack_stream.jsp 流量混淆连接器(仅限比赛授权环境)
-数据查询中心 | 通道: classbytes | 用法: python java_20_pack_stream.py <url> [命令/载荷参数]
+"""
+数据查询中心 | 通道: classbytes | 用法: python 2.py <url>
 """
 import base64, hashlib, random, re, sys, urllib.parse, urllib.request
 
